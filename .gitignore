@@ -37,8 +37,6 @@ prisma/migrations/*.sql.bak
 
 # Misc
 *.tsbuildinfo
+frontend/
 backend/node_modules/
-frontend/node_modules/
 backend/dist/
-frontend/.next/
-frontend/out/
