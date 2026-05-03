@@ -40,8 +40,8 @@ export class ScraperService {
         'Accept-Language': 'en-US,en;q=0.9',
       });
 
-      await page.setViewport({ width: 1280, height: 800 });
-      await page.goto(url, { waitUntil: 'networkidle2' });
+      await page.setViewport({ width: 1440, height: 900 });
+      await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
 
       // Auto-scroll to trigger lazy loading
       await page.evaluate(async () => {
@@ -67,7 +67,8 @@ export class ScraperService {
 
         // Check all images
         document.querySelectorAll('img').forEach((img) => {
-          if (img.src && img.src.startsWith('http')) results.add(img.src);
+          const src = img.src || img.currentSrc;
+          if (src && src.startsWith('http')) results.add(src);
 
           // Handle srcset (pick the last one usually highest quality)
           if (img.srcset) {
@@ -79,9 +80,12 @@ export class ScraperService {
           }
 
           // Handle data-src or data-original (lazy loading)
-          ['data-src', 'data-original', 'data-lazy'].forEach(attr => {
+          ['data-src', 'data-original', 'data-lazy', 'data-fallback'].forEach(attr => {
             const val = img.getAttribute(attr);
-            if (val && val.startsWith('http')) results.add(val);
+            if (val) {
+              if (val.startsWith('http')) results.add(val);
+              else if (val.startsWith('/')) results.add(window.location.origin + val);
+            }
           });
         });
 
