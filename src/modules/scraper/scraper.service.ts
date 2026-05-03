@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
-import * as archiver from 'archiver';
+import archiver = require('archiver');
 import axios from 'axios';
 import { Response } from 'express';
 
