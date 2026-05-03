@@ -49,7 +49,7 @@ export class ScraperService {
         await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
       } catch (e) {
         this.logger.warn(`Navigation timeout or error for ${url}, proceeding anyway...`);
-        await page.waitForTimeout(5000); // Wait a bit more if networkidle failed
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait a bit more if networkidle failed
       }
 
       // Auto-scroll to trigger lazy loading

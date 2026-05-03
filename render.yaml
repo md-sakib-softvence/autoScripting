@@ -1,8 +1,8 @@
 services:
   - type: web
     name: auto-scripting-backend
-    env: node
-    plan: free
+    runtime: node
+    plan: starter
     buildCommand: npm install && npx prisma generate
     startCommand: npm run start:prod
     envVars:
