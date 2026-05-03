@@ -101,9 +101,9 @@ export class ScraperService {
         const results = new Set<string>();
 
         document.querySelectorAll('video').forEach(v => {
-          if (v.src) results.add(v.src);
+          if (v.src && !v.src.startsWith('blob:')) results.add(v.src);
           v.querySelectorAll('source').forEach(s => {
-            if (s.src) results.add(s.src);
+            if (s.src && !s.src.startsWith('blob:')) results.add(s.src);
           });
         });
         
@@ -115,6 +115,26 @@ export class ScraperService {
 
         return Array.from(results);
       });
+
+      // Special handling for YouTube/Vimeo URLs directly
+      if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
+        const videoId = url.includes('v=') 
+          ? url.split('v=')[1]?.split('&')[0] 
+          : url.split('/').pop()?.split('?')[0];
+        
+        if (videoId) {
+          const ytUrl = `https://www.youtube.com/embed/${videoId}`;
+          if (!videos.includes(ytUrl)) videos.push(ytUrl);
+          const thumbUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+          if (!images.includes(thumbUrl)) images.push(thumbUrl);
+        }
+      } else if (url.includes('vimeo.com/')) {
+        const vimeoId = url.split('/').pop()?.split('?')[0];
+        if (vimeoId && !isNaN(Number(vimeoId))) {
+          const vimeoUrl = `https://player.vimeo.com/video/${vimeoId}`;
+          if (!videos.includes(vimeoUrl)) videos.push(vimeoUrl);
+        }
+      }
 
       // Extract H1 Tags
       const h1s = await page.evaluate(() => {

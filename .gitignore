@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
 dist/
 .next/
 out/
@@ -37,6 +35,6 @@ prisma/migrations/*.sql.bak
 
 # Misc
 *.tsbuildinfo
+
+# Sub-projects
 frontend/
-backend/node_modules/
-backend/dist/
