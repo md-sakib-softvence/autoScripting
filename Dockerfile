@@ -58,8 +58,8 @@ ENV NODE_ENV=production
 EXPOSE 3000
 
 CMD ["bash", "-c", "\
-  echo '⏳ Waiting for PostgreSQL...'; \
-  until pg_isready -h db -p 5432 -U \"$POSTGRES_USER\"; do sleep 2; done; \
+  echo '⏳ Waiting for Database...'; \
+  until pg_isready -d \"$DATABASE_URL\"; do sleep 2; done; \
   echo '⚙️  Generating Prisma Client...'; \
   npx prisma generate; \
   echo '📦 Running Prisma Migrations...'; \
