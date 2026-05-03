@@ -1,20 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
-import archiver = require('archiver');
+import * as archiver from 'archiver';
 import axios from 'axios';
 import { Response } from 'express';
 
+/**
+ * Service responsible for web scraping operations and archive creation.
+ * Uses Puppeteer for dynamic content rendering and archiver for ZIP generation.
+ */
 @Injectable()
 export class ScraperService {
   private readonly logger = new Logger(ScraperService.name);
 
+  /**
+   * Scrapes the provided URL for images, links, videos, and H1 tags.
+   * Handles lazy-loading by auto-scrolling and special-cases YouTube/Vimeo.
+   * @param url The website URL to analyze
+   */
   async scrape(url: string) {
     this.logger.log(`🔍 Scraping URL: ${url}`);
-    
+
     const browser = await puppeteer.launch({
       headless: true,
       args: [
-        '--no-sandbox', 
+        '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-blink-features=AutomationControlled',
       ],
@@ -22,10 +31,10 @@ export class ScraperService {
 
     try {
       const page = await browser.newPage();
-      
+
       // Set realistic User-Agent
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      
+
       // Set extra headers
       await page.setExtraHTTPHeaders({
         'Accept-Language': 'en-US,en;q=0.9',
@@ -55,11 +64,11 @@ export class ScraperService {
       // Extract Images (Improved)
       const images = await page.evaluate(() => {
         const results = new Set<string>();
-        
+
         // Check all images
         document.querySelectorAll('img').forEach((img) => {
           if (img.src && img.src.startsWith('http')) results.add(img.src);
-          
+
           // Handle srcset (pick the last one usually highest quality)
           if (img.srcset) {
             const sources = img.srcset.split(',').map(s => s.trim().split(' ')[0]);
@@ -106,7 +115,7 @@ export class ScraperService {
             if (s.src && !s.src.startsWith('blob:')) results.add(s.src);
           });
         });
-        
+
         document.querySelectorAll('iframe').forEach(iframe => {
           if (iframe.src && (iframe.src.includes('youtube.com') || iframe.src.includes('vimeo.com') || iframe.src.includes('video'))) {
             results.add(iframe.src);
@@ -118,10 +127,10 @@ export class ScraperService {
 
       // Special handling for YouTube/Vimeo URLs directly
       if (url.includes('youtube.com/watch') || url.includes('youtu.be/')) {
-        const videoId = url.includes('v=') 
-          ? url.split('v=')[1]?.split('&')[0] 
+        const videoId = url.includes('v=')
+          ? url.split('v=')[1]?.split('&')[0]
           : url.split('/').pop()?.split('?')[0];
-        
+
         if (videoId) {
           const ytUrl = `https://www.youtube.com/embed/${videoId}`;
           if (!videos.includes(ytUrl)) videos.push(ytUrl);
@@ -157,9 +166,14 @@ export class ScraperService {
     }
   }
 
+  /**
+   * Creates a ZIP archive containing the provided media URLs and streams it to the response.
+   * @param urls Array of media URLs to include in the ZIP
+   * @param res Express Response object to pipe the archive to
+   */
   async createZip(urls: string[], res: Response) {
     const archive = archiver('zip', { zlib: { level: 9 } });
-    
+
     archive.on('error', (err) => {
       this.logger.error(`Archive error: ${err.message}`);
       res.status(500).send({ error: 'Failed to create archive' });
