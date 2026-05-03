@@ -35,13 +35,22 @@ export class ScraperService {
       // Set realistic User-Agent
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-      // Set extra headers
+      // Set more comprehensive headers to avoid bot detection
       await page.setExtraHTTPHeaders({
         'Accept-Language': 'en-US,en;q=0.9',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
       });
 
       await page.setViewport({ width: 1440, height: 900 });
-      await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+      
+      try {
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
+      } catch (e) {
+        this.logger.warn(`Navigation timeout or error for ${url}, proceeding anyway...`);
+        await page.waitForTimeout(5000); // Wait a bit more if networkidle failed
+      }
 
       // Auto-scroll to trigger lazy loading
       await page.evaluate(async () => {
@@ -80,11 +89,12 @@ export class ScraperService {
           }
 
           // Handle data-src or data-original (lazy loading)
-          ['data-src', 'data-original', 'data-lazy', 'data-fallback'].forEach(attr => {
+          ['data-src', 'data-original', 'data-lazy', 'data-fallback', 'data-original-res'].forEach(attr => {
             const val = img.getAttribute(attr);
             if (val) {
               if (val.startsWith('http')) results.add(val);
               else if (val.startsWith('/')) results.add(window.location.origin + val);
+              else if (val.startsWith('//')) results.add('https:' + val);
             }
           });
         });
